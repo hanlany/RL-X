@@ -70,14 +70,19 @@ class Runner:
             # Guarantee enough memory for CUBLAS to initialize when using jax
             os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"]="false"
             import jax
+            def update_jax_config(name, value):
+                try:
+                    jax.config.update(name, value)
+                except AttributeError:
+                    logging.getLogger("rl_x").warning("Skipping unsupported JAX config option: %s", name)
             # Spent most possible time to optimize execution time and memory usage
-            jax.config.update("jax_exec_time_optimization_effort", 1.0)
-            jax.config.update("jax_memory_fitting_effort", 1.0)
+            update_jax_config("jax_exec_time_optimization_effort", 1.0)
+            update_jax_config("jax_memory_fitting_effort", 1.0)
             # Enable jax cache
-            jax.config.update("jax_compilation_cache_dir", jax_cache_dir)
-            jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
-            jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
-            jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
+            update_jax_config("jax_compilation_cache_dir", jax_cache_dir)
+            update_jax_config("jax_persistent_cache_min_entry_size_bytes", -1)
+            update_jax_config("jax_persistent_cache_min_compile_time_secs", 0)
+            update_jax_config("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
             # Set device
             alg_device = None
             if algorithm_uses_jax:
@@ -97,7 +102,7 @@ class Runner:
                 raise ValueError("Incompatible device types between algorithm and environment")
             device = alg_device or env_device
             if device == "cpu":
-                jax.config.update("jax_platform_name", "cpu")
+                update_jax_config("jax_platform_name", "cpu")
             try:
                 jax.default_backend()
             except:
